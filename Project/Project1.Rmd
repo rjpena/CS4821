@@ -1,0 +1,178 @@
+---
+title: "CS4821 Project"
+author: "Ruben Pena"
+output: html_notebook
+---
+### Package Installations
+```{r message=FALSE, warning=FALSE}
+require(c("rpart","rpart.plot","readr","caret","ROCR","pROC","caret"))
+set.seed(0)
+```
+
+
+# 1. Classification of Age based on Social Media Usage
+
+## 1(a) Load Data
+```{r message=FALSE, warning=FALSE}
+library(readr)
+social <- read_csv("Desktop/Project/syp-16-data.csv")
+social[]<-lapply(social,factor)
+str(social)
+```
+
+
+```{r}
+#Multiples Plots
+
+
+```
+
+## 1(b) Expectation
+
+Based on the output, I believe that Snapchat has the largest influence on classifying Age. This app would be the best to split the two responses.
+
+## 1(c)
+```{r}
+#(c) Construct Decision Tree and Comment
+library(rpart)
+library(rpart.plot)
+fit <- rpart(Adult~., data = social, method = 'class')
+rpart.plot(fit,main="Social Media Usage to Define General Age")
+```
+The decision tree clearly shows that Snapchat is the deciding factor for social media usage to separate Adults vs High School. The tree shows that if an individual uses Snapchat they are most likely classified as "High School". Furthermore, "Adults" who use Snapchat are more likely than "High School" to also use Instagram. These results makes sense and match earlier results. 
+
+
+
+# 2. Classification of Spam: Trees
+
+## 2(a)
+```{r message=FALSE, warning=FALSE}
+#Import dataset with some initial factorization.
+spam <- read_csv("Desktop/Project/spam.csv", 
+     col_types = cols(box = col_factor(levels = c("no", 
+        "yes")), cappct = col_skip(), category = col_skip(), 
+        chain = col_factor(levels = c("no", 
+            "yes")), credit = col_factor(levels = c("no", 
+            "yes")), `day of week` = col_factor(levels = c("Mon", 
+            "Tue", "Wed", "Thu", "Fri", "Sat", 
+            "Sun")), domain = col_skip(), 
+         id = col_skip(), isuid = col_skip(), 
+         `large text` = col_factor(levels = c("no", 
+             "yes")), local = col_factor(levels = c("yes", 
+             "no")), porn = col_factor(levels = c("no", 
+             "yes")), spam = col_factor(levels = c("no", 
+             "yes")), spampct = col_skip(), 
+         sucker = col_factor(levels = c("no", 
+             "yes")), username = col_factor(levels = c("no", 
+             "yes"))))
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+str(spam)
+spam$`time of day`<-as.factor(spam$`time of day`)
+spam$name<- as.factor(spam$name)
+#str(spam)
+
+# There is no information on this dataset. I believe the other columns could also be factorized to improve performance of the decision trees, but as I am not sure I am going to leave a few as numerics. 
+```
+
+
+## 2(b)
+```{r}
+#Split data. 75% split on Spam
+library(caret)
+trainIndex<-createDataPartition(spam$spam, p=.75, list=FALSE)
+train<-spam[trainIndex,]
+test<-spam[-trainIndex,]
+```
+
+## 2(c)
+```{r}
+#Construct a classification tree on training data
+fit_spam <- rpart(spam~., data = train, method = 'class')
+rpart.plot(fit_spam,main="DT Clf for Training Partition of Spam")
+
+```
+## 2(d) Describe the tree that is constructed.
+
+The classifier for the training set of spam using rpart shows 7 terminal leaves and 13 total nodes.
+
+## 2(e) Estimate the performance of the tree on training and testing
+```{r message=FALSE, warning=FALSE}
+library(ModelMetrics)
+pred_spamTr<-predict(fit_spam,train,type="class")
+
+#Root Node Error Rate = 0.3109419
+ModelMetrics::ce(fit_spam,train$spam)
+
+#Confusion Matrix for Pred vs Train (Accuracy)
+#Accuracy = 0.9202
+cm_spam1<-caret::confusionMatrix(pred_spamTr,train$spam)
+cm_spam1
+
+#AUC = 0.9112986
+library(pROC)
+auc(train$spam,pred_spamTrPr)
+```
+
+```{r}
+#Test Set
+pred_spam<-predict(fit_spam,test,type="class")
+#Error Rate = 0.08487085
+ce(pred_spam,test$spam)
+
+#Confusion Matrix for Pred vs Test (Accuracy)
+#Accuracy = 0.9151
+cm_spam2<-caret::confusionMatrix(pred_spam,test$spam)
+cm_spam2
+
+#AUC = 0.8991546
+auc(test$spam,pred_spam)
+```
+
+## 2(f) Prune the tree,
+```{r}
+par(mfrow=c(1,2))
+
+prune1 <- prune(fit_spam,cp=.02)
+rpart.plot(prune1,main="Prune 1")
+
+prune2<-prune(fit_spam,cp=.03)
+rpart.plot(prune2,main="Prune 2")
+
+```
+```{r}
+printcp(prune1)
+printcp(prune2)
+```
+Classification resulst show the same error rates. Nothing changed besides making the tree smaller and easier to interpret. 
+
+
+# 3.Classification of Music Popularity
+
+## 3(a) Load data
+
+```{r}
+library(readr)
+music <- read_csv("Desktop/Project/music.csv", 
+    col_types = cols(Top10 = col_logical(), 
+        artistID = col_skip(), artistname = col_skip(), 
+        key_confidence = col_skip(), songID = col_skip(), 
+        songtitle = col_skip(), timesignature_confidence = col_skip()))
+```
+
+## 3(b)
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
